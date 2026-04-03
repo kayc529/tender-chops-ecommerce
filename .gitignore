@@ -18,4 +18,5 @@ node_modules/
 # ZIP
 *.zip
 
+.DS_Store
 *.DS_Store
