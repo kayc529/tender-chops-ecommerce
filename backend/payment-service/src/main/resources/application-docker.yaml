@@ -1,0 +1,10 @@
+spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            token-uri: http://keycloak:8080/realms/tender-chops-test/protocol/openid-connect/token
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://keycloak:8080/realms/tender-chops-test/protocol/openid-connect/certs

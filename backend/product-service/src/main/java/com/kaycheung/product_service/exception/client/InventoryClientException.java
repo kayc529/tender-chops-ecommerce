@@ -1,0 +1,27 @@
+package com.kaycheung.product_service.exception.client;
+
+import lombok.Getter;
+
+@Getter
+public class InventoryClientException extends RuntimeException {
+    private final int status;
+    private final String errorCode;
+    private final String userMessage;
+    private final String debugMessage;
+
+    public InventoryClientException(int status, String errorCode, String userMessage, String debugMessage) {
+        super(debugMessage);
+        this.status = status;
+        this.errorCode = errorCode;
+        this.userMessage = userMessage;
+        this.debugMessage = debugMessage;
+    }
+
+    public InventoryClientException(int status, String errorCode, String userMessage, String debugMessage, Throwable cause) {
+        super(debugMessage, cause);
+        this.status = status;
+        this.errorCode = errorCode;
+        this.userMessage = userMessage;
+        this.debugMessage = debugMessage;
+    }
+}

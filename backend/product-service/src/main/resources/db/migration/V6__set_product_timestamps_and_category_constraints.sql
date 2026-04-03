@@ -1,0 +1,6 @@
+ALTER TABLE product
+    ALTER COLUMN created_at SET DEFAULT NOW(),
+    ALTER COLUMN created_at SET NOT NULL,
+    ALTER COLUMN updated_at SET DEFAULT NOW(),
+    ALTER COLUMN updated_at SET NOT NULL,
+    ALTER COLUMN category SET NOT NULL;

@@ -1,0 +1,21 @@
+# Env files
+.env
+*.env
+
+# AWS creds (safety)
+.aws/
+
+# Java
+**/target/
+*.log
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+
+# ZIP
+*.zip
+
+*.DS_Store

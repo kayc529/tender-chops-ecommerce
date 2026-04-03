@@ -1,0 +1,25 @@
+{
+  "name": "image-processor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "docker:install": "docker run --rm --platform=linux/amd64 -v \"$PWD\":/var/task -w /var/task node:20 bash -lc \"rm -rf node_modules package-lock.json && npm install --include=optional\"",
+    "zip": "rm -f function.zip && zip -r function.zip . -x \"*.DS_Store\" -x \".env\" -x \"*.git*\" -x \"function.zip\"",
+    "build": "npm run docker:install && npm run zip",
+    "deploy": "aws lambda update-function-code --function-name image-processor --zip-file fileb://function.zip"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1019.0",
+    "@aws-sdk/client-secrets-manager": "^3.1019.0",
+    "sharp": "0.34.5"
+  }
+}
