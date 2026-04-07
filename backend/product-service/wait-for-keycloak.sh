@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-KEYCLOAK_URL="http://keycloak:8080/realms/tender-chops-test/.well-known/openid-configuration"
+KEYCLOAK_URL="http://${KEYCLOAK_HOST}/realms/${KEYCLOAK_REALM}/.well-known/openid-configuration"
 
 echo "Waiting for Keycloak at ${KEYCLOAK_URL}"
 
