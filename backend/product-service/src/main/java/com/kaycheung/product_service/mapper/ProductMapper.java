@@ -28,11 +28,17 @@ public abstract class ProductMapper {
     @Mapping(target = "priceString", expression = "java(formatPrice(product.getBasePrice()))")
     @Mapping(target = "imageUrl", source = "imageKey", qualifiedByName = "mediaUrl")
     @Mapping(target = "thumbnailUrl", source = "thumbnailKey", qualifiedByName = "mediaUrl")
+    @Mapping(target = "available", source = ".", qualifiedByName = "mapAvailable")
+    @Mapping(target = "availableStock", source = ".", qualifiedByName = "mapAvailableStock")
+    @Mapping(target = "availabilityStatus", source = "productStock.availabilityStatus")
     public abstract ProductResponseDTO toDetailDto(Product product);
 
     @Mapping(target = "id", expression = "java(product.getId().toString())")
     @Mapping(target = "priceString", expression = "java(formatPrice(product.getBasePrice()))")
     @Mapping(target = "thumbnailUrl", source = "thumbnailKey", qualifiedByName = "mediaUrl")
+    @Mapping(target = "available", source = ".", qualifiedByName = "mapAvailable")
+    @Mapping(target = "availableStock", source = ".", qualifiedByName = "mapAvailableStock")
+    @Mapping(target = "availabilityStatus", source = "productStock.availabilityStatus")
     public abstract ProductListItemDTO toListDto(Product product);
 
     //  Update Product from RequestDTO without mapping the id
@@ -53,7 +59,7 @@ public abstract class ProductMapper {
     }
 
     //  Helper for formatting cents -> "xx.xx"
-    protected String formatPrice(Long basePrice){
+    protected String formatPrice(Long basePrice) {
         if (basePrice == null) {
             return null;
         }
@@ -65,9 +71,8 @@ public abstract class ProductMapper {
         return String.format("%d.%02d", dollars, remainder);
     }
 
-    protected Long convertToCents(BigDecimal price)
-    {
-        if (price.scale() > 2){
+    protected Long convertToCents(BigDecimal price) {
+        if (price.scale() > 2) {
             throw new IllegalArgumentException("Price cannot have more than 2 decimal places");
         }
 
@@ -76,4 +81,20 @@ public abstract class ProductMapper {
                 .setScale(0, RoundingMode.UNNECESSARY)
                 .longValue();
     }
+
+    @Named("mapAvailable")
+    protected boolean mapAvailable(Product product) {
+        return product.getProductStock() != null
+                && product.getProductStock().getAvailableStock() != null
+                && product.getProductStock().getAvailableStock() > 0;
+    }
+
+    @Named("mapAvailableStock")
+    protected Long mapAvailableStock(Product product) {
+        if (product.getProductStock() == null || product.getProductStock().getAvailableStock() == null) {
+            return 0L;
+        }
+        return product.getProductStock().getAvailableStock().longValue();
+    }
+
 }

@@ -47,6 +47,7 @@ public class WebhooksService {
         Optional<StripeObject> maybeObj = event.getDataObjectDeserializer().getObject();
 
         if (maybeObj.isEmpty()) {
+            log.error("maybeObj is empty");
             throw new BadWebhookPayloadException("Bad payload");
         }
 
@@ -57,6 +58,7 @@ public class WebhooksService {
 
         try {
             processedProviderEventRepository.save(processedProviderEvent);
+            log.info("ProcessedProviderEvent saved eventId={}", event.getId());
         } catch (DataIntegrityViolationException ex) {
             log.warn("Event eventId={} already processed", event.getId());
             return;

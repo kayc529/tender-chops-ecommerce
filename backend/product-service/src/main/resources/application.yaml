@@ -94,5 +94,11 @@ logging:
           descriptor:
             sql: TRACE
 
+management:
+  health:
+    redis:
+      enabled: false
+
+
 
 

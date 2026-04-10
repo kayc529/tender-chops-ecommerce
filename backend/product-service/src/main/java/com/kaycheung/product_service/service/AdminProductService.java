@@ -2,28 +2,31 @@ package com.kaycheung.product_service.service;
 
 import com.kaycheung.product_service.client.InventoryClient;
 import com.kaycheung.product_service.client.InventoryCreateRequestDTO;
-import com.kaycheung.product_service.client.InventoryResponseDTO;
 import com.kaycheung.product_service.config.properties.AwsS3Properties;
 import com.kaycheung.product_service.dto.ProductRequestDTO;
 import com.kaycheung.product_service.dto.ProductResponseDTO;
 import com.kaycheung.product_service.dto.UploadProductImageRequestDTO;
 import com.kaycheung.product_service.dto.UploadProductImageResponseDTO;
 import com.kaycheung.product_service.entity.Product;
+import com.kaycheung.product_service.entity.ProductStock;
+import com.kaycheung.product_service.entity.StockAvailabilityStatus;
 import com.kaycheung.product_service.exception.domain.ProductImageFormatInvalidException;
 import com.kaycheung.product_service.exception.domain.ProductImageUploadUrlGenerationException;
 import com.kaycheung.product_service.exception.domain.ProductNotFoundException;
 import com.kaycheung.product_service.mapper.ProductMapper;
 import com.kaycheung.product_service.repository.ProductRepository;
+import com.kaycheung.product_service.repository.ProductStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -31,28 +34,34 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminProductService {
     private final ProductMapper productMapper;
+
     private final ProductRepository productRepository;
+    private final ProductStockRepository productStockRepository;
+
     private final ProductPersistService productPersistService;
+    private final ProductCacheService productCacheService;
+
     private final S3Presigner s3Presigner;
     private final AwsS3Properties s3BucketProperties;
     private final InventoryClient inventoryClient;
-    private final ProductCacheService productCacheService;
 
-    @Transactional
-    public ProductResponseDTO createProduct(ProductRequestDTO request){
-        Product product =  productRepository.save(productMapper.toEntity(request));
+    public ProductResponseDTO createProduct(ProductRequestDTO request) {
+        Product product = productPersistService.createNewProductAndProductStock(request);
 
         //  create inventory for new product
-        InventoryCreateRequestDTO inventoryRequest = new InventoryCreateRequestDTO(product.getId());
-        InventoryResponseDTO inventoryCreated = inventoryClient.createInventoryForNewProduct(inventoryRequest);
+        try {
+            InventoryCreateRequestDTO inventoryRequest = new InventoryCreateRequestDTO(product.getId());
+            inventoryClient.createInventoryForNewProduct(inventoryRequest);
+        } catch (Exception ex) {
+            log.error("createProduct: Failed to create inventory - ", ex);
+            //  TODO create an outbox event PRODUCT_CREATED for inventory-service to consume and create the missing inventory
+        }
 
-        log.info(inventoryCreated.toString());
         return productMapper.toDetailDto(product);
     }
 
-    public ProductResponseDTO updateProduct(UUID productId, ProductRequestDTO request)
-    {
-        Product product = productRepository.findById(productId).orElseThrow(()-> new ProductNotFoundException(productId));
+    public ProductResponseDTO updateProduct(UUID productId, ProductRequestDTO request) {
+        Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
         productMapper.updateProductFromRequestDTO(request, product);
         productRepository.save(product);
 
@@ -61,9 +70,8 @@ public class AdminProductService {
         return productMapper.toDetailDto(product);
     }
 
-    public void deleteProduct(UUID productId)
-    {
-        Product product = productRepository.findById(productId).orElseThrow(()->new ProductNotFoundException(productId));
+    public void deleteProduct(UUID productId) {
+        Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
         productRepository.delete(product);
 
         productCacheService.evictProduct(productId);

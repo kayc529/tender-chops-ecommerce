@@ -1,5 +1,7 @@
 package com.kaycheung.product_service.dto;
 
+import com.kaycheung.product_service.entity.StockAvailabilityStatus;
+
 public record ProductResponseDTO(
         String id,
         String title,
@@ -9,5 +11,10 @@ public record ProductResponseDTO(
         String priceString,
         String imageUrl,
         String thumbnailUrl,
-        String productCategory) {
+        String productCategory,
+        boolean available,
+        long availableStock,
+        StockAvailabilityStatus availabilityStatus
+
+) {
 }

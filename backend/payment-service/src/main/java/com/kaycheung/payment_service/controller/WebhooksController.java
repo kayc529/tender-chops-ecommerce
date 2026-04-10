@@ -32,6 +32,8 @@ public class WebhooksController {
 
         try {
             event = Webhook.constructEvent(payload, sigHeader, stripeProperties.getWebhookSigningSecret());
+            log.warn("Stripe webhook eventId={} type={} eventApiVersion={} sdkApiVersion={}",
+                    event.getId(), event.getType(), event.getApiVersion(), com.stripe.Stripe.API_VERSION);
         } catch (SignatureVerificationException ex) {
             //  Invalid signature
             log.warn("SignatureVerificationException={} ", ex.getMessage());
@@ -45,8 +47,10 @@ public class WebhooksController {
         try {
             webhooksService.handleStripeWebhookEvent(event, payload);
         } catch (BadWebhookPayloadException ex) {
+            log.error("BadWebhookPayloadException:", ex);
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (Exception ex) {
+            log.error("Webhook processing failed", ex);
             return ResponseEntity.status(500).body("Server error");
         }
 

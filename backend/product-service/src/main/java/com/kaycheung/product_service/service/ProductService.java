@@ -8,6 +8,7 @@ import com.kaycheung.product_service.entity.ProductCategory;
 import com.kaycheung.product_service.exception.domain.ProductNotFoundException;
 import com.kaycheung.product_service.mapper.ProductMapper;
 import com.kaycheung.product_service.repository.ProductRepository;
+import com.kaycheung.product_service.repository.ProductStockRepository;
 import com.kaycheung.product_service.repository.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

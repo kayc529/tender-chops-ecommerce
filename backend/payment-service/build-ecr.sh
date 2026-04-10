@@ -24,9 +24,23 @@ if [ ! -f "Dockerfile" ]; then
   exit 1
 fi
 
+if [ ! -f "pom.xml" ]; then
+  echo "Error: pom.xml not found in ${PROJECT_ROOT}"
+  exit 1
+fi
+
+if [ -x "./mvnw" ]; then
+  MAVEN_CMD="./mvnw"
+else
+  MAVEN_CMD="mvn"
+fi
+
 echo "Logging in to Amazon ECR..."
 aws ecr get-login-password --region "${AWS_REGION}" \
   | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+echo "Building latest jar..."
+"${MAVEN_CMD}" clean package -DskipTests
 
 echo "Building image ${SERVICE_NAME}:${IMAGE_TAG} for linux/amd64..."
 docker build --platform linux/amd64 -t "${SERVICE_NAME}:${IMAGE_TAG}" .

@@ -2,10 +2,14 @@ package com.kaycheung.product_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@EntityListeners(AuditingEntityListener.class)
 @Entity
 @Table(name = "product")
 @AllArgsConstructor
@@ -49,8 +53,18 @@ public class Product {
     @Column(name = "category")
     private ProductCategory productCategory;
 
+    @CreatedDate
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @LastModifiedDate
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @PrimaryKeyJoinColumn(
+            name = "id",
+            referencedColumnName = "product_id"
+    )
+    private ProductStock productStock;
 }
