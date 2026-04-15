@@ -44,6 +44,33 @@ inventory:
   reservation:
     ttl: 15m
 
+messaging:
+  outbox:
+    batch-size: 10
+    fixed-delay-ms: 5000
+    next-attempt-backoff-min: 5
+  inbox:
+    batch-size: 10
+    fixed-delay-ms: 5000
+    next-attempt-backoff-min: 5
+    max-retries: 3
+
+aws:
+  region: ${AWS_REGION}
+  sns:
+    topic-arn: ${SNS_INVENTORY_EVENTS_TOPIC_ARN}
+  sqs:
+    queues:
+      - name: product-events
+        queue-url: ${SQS_INVENTORY_PRODUCT_QUEUE_URL}
+      - name: order-events
+        queue-url: ${SQS_INVENTORY_ORDER_QUEUE_URL}
+      - name: payment-events
+        queue-url: ${SQS_INVENTORY_PAYMENT_QUEUE_URL}
+    poll:
+      max-messages: 10
+      wait-time-seconds: 10
+
 logging:
   level:
     org:

@@ -25,8 +25,8 @@ public class Inventory {
 
     private UUID productId;
     private int totalQuantity;
-    // v2
     private int reservedQuantity;
+    private long stockVersion;
 
     @CreatedDate
     private Instant createdAt;

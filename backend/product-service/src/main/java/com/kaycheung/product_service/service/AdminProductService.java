@@ -1,5 +1,8 @@
 package com.kaycheung.product_service.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kaycheung.product_service.client.InventoryClient;
 import com.kaycheung.product_service.client.InventoryCreateRequestDTO;
 import com.kaycheung.product_service.config.properties.AwsS3Properties;
@@ -14,11 +17,15 @@ import com.kaycheung.product_service.exception.domain.ProductImageFormatInvalidE
 import com.kaycheung.product_service.exception.domain.ProductImageUploadUrlGenerationException;
 import com.kaycheung.product_service.exception.domain.ProductNotFoundException;
 import com.kaycheung.product_service.mapper.ProductMapper;
+import com.kaycheung.product_service.messaging.outbox.OutboxEvent;
+import com.kaycheung.product_service.messaging.outbox.OutboxEventService;
+import com.kaycheung.product_service.messaging.outbox.OutboxEventType;
 import com.kaycheung.product_service.repository.ProductRepository;
 import com.kaycheung.product_service.repository.ProductStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -34,28 +41,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminProductService {
     private final ProductMapper productMapper;
+    private final ObjectMapper objectMapper;
 
     private final ProductRepository productRepository;
     private final ProductStockRepository productStockRepository;
 
     private final ProductPersistService productPersistService;
     private final ProductCacheService productCacheService;
+    private final OutboxEventService outboxEventService;
 
     private final S3Presigner s3Presigner;
     private final AwsS3Properties s3BucketProperties;
-    private final InventoryClient inventoryClient;
 
     public ProductResponseDTO createProduct(ProductRequestDTO request) {
         Product product = productPersistService.createNewProductAndProductStock(request);
 
-        //  create inventory for new product
-        try {
-            InventoryCreateRequestDTO inventoryRequest = new InventoryCreateRequestDTO(product.getId());
-            inventoryClient.createInventoryForNewProduct(inventoryRequest);
-        } catch (Exception ex) {
-            log.error("createProduct: Failed to create inventory - ", ex);
-            //  TODO create an outbox event PRODUCT_CREATED for inventory-service to consume and create the missing inventory
-        }
+        //  create OutboxEvent PRODUCT_CREATED
+        String key = "product:" + product.getId() + ":created";
+        String payload = buildOutboxPayloadForCreateProduct(product);
+        outboxEventService.createOutboxEvent(OutboxEventType.PRODUCT_CREATED, payload, key);
 
         return productMapper.toDetailDto(product);
     }
@@ -70,6 +74,7 @@ public class AdminProductService {
         return productMapper.toDetailDto(product);
     }
 
+    @Transactional
     public void deleteProduct(UUID productId) {
         Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
         productRepository.delete(product);
@@ -103,6 +108,18 @@ public class AdminProductService {
                 productId, imageKey, thumbnailKey, request.contentType());
 
         return new UploadProductImageResponseDTO(presignedUrl, request.contentType());
+    }
+
+    private String buildOutboxPayloadForCreateProduct(Product product)
+    {
+        ObjectNode node = objectMapper.createObjectNode();
+        node.put("productId", product.getId().toString());
+
+        try {
+            return objectMapper.writeValueAsString(node);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize outbox payload (PRODUCT_CREATED) for productId==" + product.getId(), e);
+        }
     }
 
     private String getS3PresignedUrl(String imageKey, String contentType) {

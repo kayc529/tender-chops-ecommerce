@@ -6,6 +6,8 @@ public enum InventoryErrorCode implements ApiErrorCode {
     INVENTORY_INVALID_RESERVATION_REQUEST("Invalid Reservation Request"),
     INVENTORY_QUANTITY_CONFLICT("Inventory Conflict"),
     INVENTORY_INVARIANT_VIOLATION("Inventory Internal Error"),
+    INVENTORY_RESERVATION_INVALID_STATE("Reservation cannot be processed due to current state"),
+    INVENTORY_TOTAL_QUANTITY_NEGATIVE("Total inventory quantity cannot be negative"),
     INVENTORY_SERVICE_UNAVAILABLE("Inventory Service Unavailable"),
     INVENTORY_BUSY_TRY_AGAIN("Inventory Service Busy");
 

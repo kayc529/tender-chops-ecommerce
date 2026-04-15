@@ -12,9 +12,11 @@ import com.kaycheung.order_service.mapper.PublicOrderMapper;
 import com.kaycheung.order_service.messaging.inbox.handler.PaymentInboxEventHandler;
 import com.kaycheung.order_service.messaging.outbox.OutboxEventService;
 import com.kaycheung.order_service.messaging.outbox.OutboxEventType;
+import com.kaycheung.order_service.messaging.outbox.payload.OrderCreatedPayload;
 import com.kaycheung.order_service.repository.OrderItemRepository;
 import com.kaycheung.order_service.repository.OrderRepository;
 import com.kaycheung.order_service.repository.projection.OrderSourceQuoteIdProjection;
+import com.kaycheung.order_service.util.ObjectMapperUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,6 +39,7 @@ public class OrderPersistenceService {
     private final PublicOrderMapper orderMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final OutboxEventService outboxEventService;
+    private final ObjectMapperUtils objectMapperUtils;
 
     @Transactional
     public PublicOrderResponseDTO createOrderAndOrderItems(UUID userId, PublicOrderCreateRequestDTOAddress address, Quote quote, Map<UUID, QuoteItem> quoteItemsByProductId) {
@@ -64,9 +67,13 @@ public class OrderPersistenceService {
         }
         List<OrderItem> orderItemsSaved = orderItemRepository.saveAll(orderItemsToSave);
 
-        //  TODO change to AWS SNS
         //  publish event to empty cart
         eventPublisher.publishEvent(new OrderCreatedEvent(userId));
+
+        OrderCreatedPayload payloadObject = new OrderCreatedPayload(quote.getId(), orderSaved.getId());
+        String payload = objectMapperUtils.toJson(payloadObject);
+        String key = "order:" + orderSaved.getId() + ":order_created";
+        outboxEventService.createOutboxEvent(OutboxEventType.ORDER_CREATED, payload, key);
 
         return orderMapper.toDto(orderSaved, orderItemsSaved);
     }

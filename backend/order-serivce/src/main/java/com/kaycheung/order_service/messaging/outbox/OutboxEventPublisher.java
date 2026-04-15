@@ -4,19 +4,19 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kaycheung.order_service.config.properties.AwsMessagingProperties;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 import java.time.Instant;
+import java.util.Map;
 
-
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OutboxEventPublisher {
-    private static final Logger log = LoggerFactory.getLogger(OutboxEventPublisher.class);
     private final ObjectMapper objectMapper;
     private final SnsClient snsClient;
     private final AwsMessagingProperties awsMessagingProperties;
@@ -36,9 +36,18 @@ public class OutboxEventPublisher {
 
         try {
             String messageJson = objectMapper.writeValueAsString(request);
+
+            Map<String, MessageAttributeValue> messageAttributes = Map.of(
+                    "eventType", MessageAttributeValue.builder()
+                            .dataType("String")
+                            .stringValue(type.name())
+                            .build()
+            );
+
             PublishRequest publishRequest = PublishRequest.builder()
                     .topicArn(awsMessagingProperties.getSns().getTopicArn())
                     .message(messageJson)
+                    .messageAttributes(messageAttributes)
                     .build();
 
             snsClient.publish(publishRequest);

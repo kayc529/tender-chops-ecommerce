@@ -8,9 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -36,9 +38,18 @@ public class OutboxEventPublisher {
 
         try {
             String messageJson = objectMapper.writeValueAsString(request);
+
+            Map<String, MessageAttributeValue> messageAttributes = Map.of(
+                    "eventType", MessageAttributeValue.builder()
+                            .dataType("String")
+                            .stringValue(type.name())
+                            .build()
+            );
+
             PublishRequest publishRequest = PublishRequest.builder()
                     .topicArn(awsMessagingProperties.getSns().getTopicArn())
                     .message(messageJson)
+                    .messageAttributes(messageAttributes)
                     .build();
 
             snsClient.publish(publishRequest);

@@ -2,17 +2,55 @@ package com.kaycheung.payment_service.messaging.outbox;
 
 import com.kaycheung.payment_service.config.properties.MessagingProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
+import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OutboxEventService {
     private final OutboxEventRepository outboxEventRepository;
     private final MessagingProperties messagingProperties;
+
+    @Transactional
+    public void createOutboxEvent(OutboxEventType eventType, String payload, String idempotencyKey) {
+        Objects.requireNonNull(eventType, "eventType");
+
+        if (payload == null || payload.isBlank()) {
+            throw new IllegalArgumentException("payload must not be blank");
+        }
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("idempotencyKey must not be blank");
+        }
+
+        Instant now = Instant.now();
+
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .idempotencyKey(idempotencyKey)
+                .eventType(eventType.name())
+                .payload(payload)
+                .occurredAt(now)
+                .publishedAt(null)
+                .attemptCount(0)
+                .lastError(null)
+                .nextAttemptAt(now)
+                .build();
+
+        try {
+            outboxEventRepository.save(outboxEvent);
+            log.info("OutboxEvent created: type={}, key={}", eventType, idempotencyKey);
+        } catch (DataIntegrityViolationException ex) {
+            // Duplicate delivery or duplicate handler run — safe to ignore.
+            log.info("OutboxEvent already exists (idempotent): key={}, type={}", idempotencyKey, eventType);
+        }
+    }
 
     @Transactional
     public void updateOutboxEventOnSuccess(OutboxEvent outboxEvent, Instant now) {

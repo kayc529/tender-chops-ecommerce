@@ -7,8 +7,12 @@ import com.kaycheung.order_service.event.OrderCanceledEvent;
 import com.kaycheung.order_service.exception.domain.order.OrderChangeStatusException;
 import com.kaycheung.order_service.exception.domain.order.OrderInvalidStatusValueException;
 import com.kaycheung.order_service.exception.domain.order.OrderNotFoundException;
+import com.kaycheung.order_service.messaging.outbox.OutboxEventService;
+import com.kaycheung.order_service.messaging.outbox.OutboxEventType;
+import com.kaycheung.order_service.messaging.outbox.payload.OrderCanceledPayload;
 import com.kaycheung.order_service.repository.OrderItemRepository;
 import com.kaycheung.order_service.repository.OrderRepository;
+import com.kaycheung.order_service.util.ObjectMapperUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -21,10 +25,10 @@ import java.util.UUID;
 public class InternalOrderService {
 
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapperUtils objectMapperUtils;
+    private final OutboxEventService outboxEventService;
 
-
+    @Transactional
     public void updateOrderStatus(UUID orderId, InternalUpdateOrderStatusDTO request) {
         OrderStatus newOrderStatus;
         try {
@@ -54,8 +58,9 @@ public class InternalOrderService {
         order.setOrderStatus(OrderStatus.CANCELED);
         orderRepository.save(order);
 
-        //  TODO write event to outbox
-        //  fire event to release reservations
-        eventPublisher.publishEvent(new OrderCanceledEvent(order.getSourceQuoteId()));
+        OrderCanceledPayload payloadObject = new OrderCanceledPayload(order.getSourceQuoteId());
+        String payload = objectMapperUtils.toJson(payloadObject);
+        String key = "order:quote" + order.getSourceQuoteId() + "order_canceled";
+        outboxEventService.createOutboxEvent(OutboxEventType.ORDER_CANCELED, payload, key);
     }
 }

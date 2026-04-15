@@ -5,13 +5,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kaycheung.payment_service.domain.Providers;
 import com.kaycheung.payment_service.entity.*;
 import com.kaycheung.payment_service.exception.BadWebhookPayloadException;
-import com.kaycheung.payment_service.messaging.outbox.OutboxEvent;
-import com.kaycheung.payment_service.messaging.outbox.OutboxEventRepository;
+import com.kaycheung.payment_service.messaging.outbox.OutboxEventService;
 import com.kaycheung.payment_service.messaging.outbox.OutboxEventType;
+import com.kaycheung.payment_service.messaging.outbox.payload.PaymentAttemptAuthorizedPayload;
+import com.kaycheung.payment_service.messaging.outbox.payload.PaymentAttemptCanceledPayload;
+import com.kaycheung.payment_service.messaging.outbox.payload.PaymentAttemptFailedPayload;
+import com.kaycheung.payment_service.messaging.outbox.payload.PaymentCapturedPayload;
 import com.kaycheung.payment_service.repository.CheckoutSessionExpireTaskRepository;
 import com.kaycheung.payment_service.repository.PaymentAttemptRepository;
 import com.kaycheung.payment_service.repository.PaymentRepository;
 import com.kaycheung.payment_service.repository.ProcessedProviderEventRepository;
+import com.kaycheung.payment_service.util.ObjectMapperUtil;
 import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.StripeObject;
@@ -24,7 +28,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,11 +40,11 @@ public class WebhooksService {
     private final ProcessedProviderEventRepository processedProviderEventRepository;
     private final PaymentAttemptRepository paymentAttemptRepository;
     private final PaymentRepository paymentRepository;
-    private final OutboxEventRepository outboxEventRepository;
     private final CheckoutSessionExpireTaskRepository checkoutSessionExpireTaskRepository;
     private final PaymentService paymentService;
+    private final OutboxEventService outboxEventService;
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapperUtil objectMapperUtil;
 
     //  TODO hash rawPayload
     @Transactional
@@ -70,6 +76,8 @@ public class WebhooksService {
         switch (type) {
             //  user completed the checkout process on the Stripe-hosted page
             case "checkout.session.completed" -> {
+                log.info("Processing webhook: checkout.session.completed");
+
                 if (!(obj instanceof Session session)) {
                     log.warn("checkout.session.completed eventId={}: unexpected data.object type {}", eventId, obj.getClass().getName());
                     return;
@@ -96,8 +104,8 @@ public class WebhooksService {
                 }
 
                 if (paymentAttempt.getPaymentIntentId() == null) {
-                    //  TODO only update paymentIntentId
                     paymentService.updatePaymentAttemptPaymentIntentId(paymentAttempt.getId(), paymentIntentId);
+                    log.info("Webhook successfully processed: checkout.session.completed");
                 } else if (!paymentAttempt.getPaymentIntentId().equals(paymentIntentId)) {
                     log.warn("checkout.session.completed eventId={} sessionId={}: paymentIntentId mismatch - paymentAttempt.paymentIntentId={}, incoming paymentIntentId={}", eventId, sessionId, paymentAttempt.getPaymentIntentId(), paymentIntentId);
                 }
@@ -105,6 +113,8 @@ public class WebhooksService {
 
             //  payment has been authorized but not yet captured
             case "payment_intent.amount_capturable_updated" -> {
+                log.info("Processing webhook: payment_intent.amount_capturable_updated");
+
                 if (!(obj instanceof PaymentIntent paymentIntent)) {
                     log.warn("payment_intent.amount_capturable_updated eventId={}: unexpected data.object type {}", eventId, obj.getClass().getName());
                     return;
@@ -127,6 +137,7 @@ public class WebhooksService {
                 PaymentAttempt paymentAttempt = resolvePaymentAttemptFromPaymentIntent("payment_intent.amount_capturable_updated", eventId, paymentIntent);
 
                 if (paymentAttempt == null) {
+                    log.info("Webhook process ended for payment_intent.amount_capturable_updated: paymentAttempt == null");
                     return;
                 }
 
@@ -141,6 +152,7 @@ public class WebhooksService {
                     }
 
                     if (fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.AUTHORIZED) {
+                        log.info("Webhook process ended for payment_intent.amount_capturable_updated: fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.AUTHORIZED");
                         return;
                     }
 
@@ -165,35 +177,24 @@ public class WebhooksService {
 
                 // publish Payment Authorized event to outbox
                 if (paymentAttempt.getId().equals(payment.getCurrentAttemptId()) && !payment.getPaymentStatus().isTerminal()) {
-                    ObjectNode node = objectMapper.createObjectNode();
-                    node.put("paymentId", payment.getId().toString());
-                    node.put("paymentAttemptId", paymentAttempt.getId().toString());
-                    node.put("orderId", payment.getOrderId().toString());
+                    PaymentAttemptAuthorizedPayload paymentAttemptAuthorizedPayload = new PaymentAttemptAuthorizedPayload(payment.getId(), paymentAttempt.getId(), payment.getOrderId());
 
-                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttempt.getId() + ":authorized";
-                    Instant now = Instant.now();
-
-                    OutboxEvent outboxEvent = OutboxEvent.builder()
-                            .idempotencyKey(key)
-                            .eventType(OutboxEventType.PAYMENT_ATTEMPT_AUTHORIZED.name())
-                            .payload(toJson(node))
-                            .occurredAt(now)
-                            .nextAttemptAt(now)
-                            .attemptCount(0)
-                            .build();
+                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttempt.getId() + ":payment_attempt_authorized";
+                    String payload = objectMapperUtil.toJson(paymentAttemptAuthorizedPayload);
 
                     try {
-                        outboxEventRepository.save(outboxEvent);
+                        outboxEventService.createOutboxEvent(OutboxEventType.PAYMENT_ATTEMPT_AUTHORIZED, payload, key);
                     } catch (DataIntegrityViolationException ex) {
                         log.warn("payment_intent.amount_capturable_updated Outbox event (PAYMENT_ATTEMPT_AUTHORIZED) already exists: idempotencyKey={}", key);
                     }
                 }
             }
-
             //  captured
             //  v1 - capture payment as long as it's not in CAPTURED status
             //  TODO: v2 - do not capture payment if payment is CANCELED, issue a refund, update payment to REFUNDED and publish PaymentRefunded event
             case "payment_intent.succeeded" -> {
+                log.info("Processing webhook: payment_intent.succeeded");
+
                 if (!(obj instanceof PaymentIntent paymentIntent)) {
                     log.warn("payment_intent.succeeded eventId={}: unexpected data.object type {}", eventId, obj.getClass().getName());
                     return;
@@ -204,6 +205,7 @@ public class WebhooksService {
                 PaymentAttempt paymentAttempt = resolvePaymentAttemptFromPaymentIntent("payment_intent.succeeded", eventId, paymentIntent);
 
                 if (paymentAttempt == null) {
+                    log.info("Webhook process ended for payment_intent.succeeded: paymentAttempt == null");
                     return;
                 }
 
@@ -223,24 +225,14 @@ public class WebhooksService {
                 //  force update payment status to CAPTURED
                 int updatedPaymentRows = paymentRepository.setStatusUnless(payment.getId(), PaymentStatus.CAPTURED, PaymentStatus.CAPTURED);
 
-                ObjectNode node = objectMapper.createObjectNode();
-                node.put("paymentId", payment.getId().toString());
-                node.put("paymentAttemptId", paymentAttemptId.toString());
-                node.put("orderId", payment.getOrderId().toString());
+                PaymentCapturedPayload paymentCapturedPayload = new PaymentCapturedPayload(payment.getId(), paymentAttemptId, payment.getOrderId());
 
-                String key = "payment:" + payment.getId() + ":captured";
+                String key = "payment:" + payment.getId() + ":payment_captured";
+                String payload = objectMapperUtil.toJson(paymentCapturedPayload);
                 Instant now = Instant.now();
 
-                OutboxEvent outboxEvent = OutboxEvent.builder()
-                        .idempotencyKey(key)
-                        .eventType(OutboxEventType.PAYMENT_CAPTURED.name())
-                        .payload(toJson(node))
-                        .attemptCount(0)
-                        .occurredAt(now)
-                        .nextAttemptAt(now)
-                        .build();
                 try {
-                    outboxEventRepository.save(outboxEvent);
+                    outboxEventService.createOutboxEvent(OutboxEventType.PAYMENT_CAPTURED, payload, key);
                 } catch (DataIntegrityViolationException ex) {
                     log.warn("payment_intent.succeeded Outbox event (PAYMENT_CAPTURED) already exists: idempotencyKey={}", key);
                 }
@@ -278,9 +270,13 @@ public class WebhooksService {
                         log.debug("payment_intent.succeeded eventId={} Payment attempt id={} has already been saved in checkout_session_expire_tasks", eventId, pa.getId());
                     }
                 }
+
+                log.info("Webhook successfully processed: payment_intent.succeeded");
             }
             //  failed
             case "payment_intent.payment_failed" -> {
+                log.info("Processing webhook: payment_intent.payment_failed");
+
                 if (!(obj instanceof PaymentIntent paymentIntent)) {
                     log.warn("payment_intent.payment_failed eventId={}: unexpected data.object type {}", eventId, obj.getClass().getName());
                     return;
@@ -291,6 +287,7 @@ public class WebhooksService {
                 PaymentAttempt paymentAttempt = resolvePaymentAttemptFromPaymentIntent("payment_intent.payment_failed", eventId, paymentIntent);
 
                 if (paymentAttempt == null) {
+                    log.info("Webhook process ended for payment_intent.payment_failed: paymentAttempt == null");
                     return;
                 }
 
@@ -309,6 +306,7 @@ public class WebhooksService {
 
                     // Not failed => terminal but NOT failed (CANCELED/CAPTURED), so don't publish failed event.
                     if (fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.FAILED) {
+                        log.info("Webhook process ended for payment_intent.payment_failed: fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.FAILED");
                         return;
                     }
 
@@ -332,33 +330,25 @@ public class WebhooksService {
                 //  2) paymentAttempt.id == payment.currentAttemptId
                 //  3) payment.paymentStatus is NOT terminal (CAPTURED/CANCELED/FAILED)
                 if (paymentAttemptId.equals(payment.getCurrentAttemptId()) && !payment.getPaymentStatus().isTerminal()) {
-                    ObjectNode node = objectMapper.createObjectNode();
-                    node.put("paymentId", payment.getId().toString());
-                    node.put("paymentAttemptId", paymentAttemptId.toString());
-                    node.put("orderId", payment.getOrderId().toString());
+                    PaymentAttemptFailedPayload paymentAttemptFailedPayload = new PaymentAttemptFailedPayload(payment.getId(), paymentAttemptId, payment.getOrderId());
 
-                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttemptId + ":failed";
-                    Instant now = Instant.now();
-
-                    OutboxEvent outboxEvent = OutboxEvent.builder()
-                            .idempotencyKey(key)
-                            .eventType(OutboxEventType.PAYMENT_ATTEMPT_FAILED.name())
-                            .payload(toJson(node))
-                            .occurredAt(now)
-                            .nextAttemptAt(now)
-                            .attemptCount(0)
-                            .build();
+                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttemptId + ":payment_attempt_failed";
+                    String payload = objectMapperUtil.toJson(paymentAttemptFailedPayload);
 
                     try {
-                        outboxEventRepository.save(outboxEvent);
+                        outboxEventService.createOutboxEvent(OutboxEventType.PAYMENT_ATTEMPT_FAILED, payload, key);
                     } catch (DataIntegrityViolationException ex) {
                         log.warn("payment_intent.payment_failed Outbox event (PAYMENT_ATTEMPT_FAILED) already exists: idempotencyKey={}", key);
                     }
                 }
+
+                log.info("Webhook successfully processed: payment_intent.payment_failed");
             }
             //  cancel
             //  TODO: update needed if new PaymentAttemptStatus are added in later versions
             case "payment_intent.canceled" -> {
+                log.info("Processing webhook: payment_intent.canceled");
+
                 if (!(obj instanceof PaymentIntent paymentIntent)) {
                     log.warn("payment_intent.canceled eventId={}: unexpected data.object type {}", eventId, obj.getClass().getName());
                     return;
@@ -369,6 +359,7 @@ public class WebhooksService {
                 PaymentAttempt paymentAttempt = resolvePaymentAttemptFromPaymentIntent("payment_intent.canceled", eventId, paymentIntent);
 
                 if (paymentAttempt == null) {
+                    log.info("Webhook process ended for payment_intent.canceled: paymentAttempt == null");
                     return;
                 }
 
@@ -387,6 +378,7 @@ public class WebhooksService {
 
                     // Not canceled => terminal but NOT canceled (FAILED/CAPTURED), so don't publish canceled event.
                     if (fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.CANCELED) {
+                        log.info("Webhook process ended for payment_intent.canceled: fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.CANCELED");
                         return;
                     }
                     paymentAttempt = fresh;
@@ -409,36 +401,28 @@ public class WebhooksService {
                 //  2) if paymentStatus is still PENDING (payable)
 
                 if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
+                    log.info("Webhook process ended for payment_intent.canceled: payment.getPaymentStatus() != PaymentStatus.PENDING");
                     return;
                 }
 
                 if (paymentAttemptId.equals(payment.getCurrentAttemptId())) {
-                    ObjectNode node = objectMapper.createObjectNode();
-                    node.put("paymentId", payment.getId().toString());
-                    node.put("paymentAttemptId", paymentAttemptId.toString());
-                    node.put("orderId", payment.getOrderId().toString());
-
-                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttemptId + ":canceled";
-                    Instant now = Instant.now();
-
-                    OutboxEvent outboxEvent = OutboxEvent.builder()
-                            .idempotencyKey(key)
-                            .eventType(OutboxEventType.PAYMENT_ATTEMPT_CANCELED.name())
-                            .payload(toJson(node))
-                            .occurredAt(now)
-                            .nextAttemptAt(now)
-                            .attemptCount(0)
-                            .build();
+                    PaymentAttemptCanceledPayload paymentAttemptCanceledPayload = new PaymentAttemptCanceledPayload(payment.getId(), paymentAttemptId, payment.getOrderId());
+                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttemptId + ":payment_attempt_canceled";
+                    String payload = objectMapperUtil.toJson(paymentAttemptCanceledPayload);
 
                     try {
-                        outboxEventRepository.save(outboxEvent);
+                        outboxEventService.createOutboxEvent(OutboxEventType.PAYMENT_ATTEMPT_CANCELED, payload, key);
                     } catch (DataIntegrityViolationException ex) {
                         log.warn("payment_intent.canceled Outbox event (PAYMENT_ATTEMPT_CANCELED) already exists: idempotencyKey={}", key);
                     }
                 }
+
+                log.info("Webhook successfully processed: payment_intent.canceled");
             }
             //  checkout session expired
             case "checkout.session.expired" -> {
+                log.info("Processing webhook: checkout.session.expired");
+
                 if (!(obj instanceof Session session)) {
                     log.warn("checkout.session.expired eventId={}: unexpected data.object type {}", eventId, obj.getClass().getName());
                     return;
@@ -473,6 +457,7 @@ public class WebhooksService {
 
                     // Not canceled => terminal but NOT canceled (FAILED/CAPTURED), so don't publish canceled event.
                     if (fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.CANCELED) {
+                        log.info("Webhook process ended for checkout.session.expired: fresh.getPaymentAttemptStatus() != PaymentAttemptStatus.CANCELED");
                         return;
                     }
                     paymentAttempt = fresh;
@@ -488,25 +473,13 @@ public class WebhooksService {
                 if (payment.getCurrentAttemptId() != null
                         && paymentAttemptId.equals(payment.getCurrentAttemptId())
                         && payment.getPaymentStatus() == PaymentStatus.PENDING) {
-                    ObjectNode node = objectMapper.createObjectNode();
-                    node.put("paymentId", payment.getId().toString());
-                    node.put("paymentAttemptId", paymentAttemptId.toString());
-                    node.put("orderId", payment.getOrderId().toString());
+                    PaymentAttemptCanceledPayload paymentAttemptCanceledPayload = new PaymentAttemptCanceledPayload(payment.getId(), paymentAttemptId, payment.getOrderId());
 
-                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttemptId + ":canceled";
-                    Instant now = Instant.now();
-
-                    OutboxEvent outboxEvent = OutboxEvent.builder()
-                            .idempotencyKey(key)
-                            .eventType(OutboxEventType.PAYMENT_ATTEMPT_CANCELED.name())
-                            .payload(toJson(node))
-                            .occurredAt(now)
-                            .nextAttemptAt(now)
-                            .attemptCount(0)
-                            .build();
+                    String key = "payment:" + payment.getId() + ":attempt:" + paymentAttemptId + ":payment_attempt_canceled";
+                    String payload = objectMapperUtil.toJson(paymentAttemptCanceledPayload);
 
                     try {
-                        outboxEventRepository.save(outboxEvent);
+                        outboxEventService.createOutboxEvent(OutboxEventType.PAYMENT_ATTEMPT_CANCELED, payload, key);
                     } catch (DataIntegrityViolationException ex) {
                         log.warn("checkout.session.expired Outbox event (PAYMENT_ATTEMPT_CANCELED) already exists: idempotencyKey={}", key);
                     }
@@ -525,20 +498,14 @@ public class WebhooksService {
                 if (taskUpdatedRows == 0) {
                     log.debug("checkout.session.expired CheckoutSessionExpireTask already completed: id={} sessionId={}", checkoutSessionExpireTask.getId(), sessionId);
                 }
+
+                log.info("Webhook successfully processed: checkout.session.expired");
             }
 
             //  ignore unneeded event type
             default -> {
                 log.debug("Ignoring unsupported Stripe webhook event type={} eventId={}", type, eventId);
             }
-        }
-    }
-
-    private String toJson(ObjectNode node) {
-        try {
-            return objectMapper.writeValueAsString(node);
-        } catch (Exception e) {
-            throw new BadWebhookPayloadException("Failed to serialize outbox payload", e);
         }
     }
 

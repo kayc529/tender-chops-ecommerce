@@ -6,10 +6,8 @@ import com.kaycheung.inventory_service.dto.internal.*;
 import com.kaycheung.inventory_service.service.InternalInventoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,8 +17,9 @@ public class InternalInventoryController {
     private final InternalInventoryService inventoryService;
 
     @PostMapping
-    public InventoryAdminResponseDTO createInventory(@Valid @RequestBody InventoryAdminCreateInventoryRequestDTO request) {
-        return inventoryService.createInventory(request);
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createInventory(@Valid @RequestBody InventoryAdminCreateInventoryRequestDTO request) {
+        inventoryService.createInventory(request);
     }
 
     @PostMapping("/reservations")

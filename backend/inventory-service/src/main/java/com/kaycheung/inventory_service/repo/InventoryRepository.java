@@ -16,6 +16,10 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
     List<Inventory> findByProductIdIn(List<UUID> productIds);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from Inventory i where i.productId = :productId")
+    Optional<Inventory> findByProductIdForUpdate(@Param("productId") UUID productId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Inventory i where i.productId in :productIds order by i.productId")
     List<Inventory> findByProductIdInForUpdate(@Param("productIds") List<UUID> productIds);
 }

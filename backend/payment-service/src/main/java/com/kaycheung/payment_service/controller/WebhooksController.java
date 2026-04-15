@@ -28,7 +28,7 @@ public class WebhooksController {
 
         Event event;
 
-        log.warn("Stripe payload={}", payload);
+//        log.warn("Stripe payload={}", payload);
 
         try {
             event = Webhook.constructEvent(payload, sigHeader, stripeProperties.getWebhookSigningSecret());

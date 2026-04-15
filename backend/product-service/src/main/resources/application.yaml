@@ -73,7 +73,19 @@ app:
     product-list-ttl-minutes: 3
     product-detail-ttl-minutes: 15
 
+messaging:
+  outbox:
+    batch-size: 10
+    fixed-delay-ms: 5000
+    next-attempt-backoff-min: 5
+  inbox:
+    batch-size: 10
+    fixed-delay-ms: 5000
+    next-attempt-backoff-min: 5
+    max-retries: 3
+
 aws:
+  region: ${AWS_REGION}
   s3:
     region: ${AWS_REGION}
     original-bucket-name: ${ORIGINAL_BUCKET_NAME}
@@ -81,6 +93,13 @@ aws:
     presign-duration-minutes: 5
   secrets:
     image-processor-callback-secret: ${LAMBDA_IMAGE_PROCESSOR_SECRET}
+  sns:
+    topic-arn: ${SNS_PRODUCT_EVENTS_TOPIC_ARN}
+  sqs:
+    queue-url: ${SQS_PRODUCT_INVENTORY_QUEUE_URL}
+    poll:
+      max-messages: 10
+      wait-time-seconds: 10
 
 logging:
   level:

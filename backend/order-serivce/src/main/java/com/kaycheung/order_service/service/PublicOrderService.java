@@ -25,12 +25,17 @@ import com.kaycheung.order_service.exception.domain.quote.*;
 import com.kaycheung.order_service.mapper.PublicOrderMapper;
 import com.kaycheung.order_service.messaging.outbox.OutboxEventService;
 import com.kaycheung.order_service.messaging.outbox.OutboxEventType;
+import com.kaycheung.order_service.messaging.outbox.payload.OrderCanceledPayload;
+import com.kaycheung.order_service.messaging.outbox.payload.OrderCreatedPayload;
+import com.kaycheung.order_service.messaging.outbox.payload.OrderCreationFailedPayload;
 import com.kaycheung.order_service.repository.OrderItemRepository;
 import com.kaycheung.order_service.repository.OrderRepository;
 import com.kaycheung.order_service.repository.QuoteItemRepository;
 import com.kaycheung.order_service.repository.QuoteRepository;
+import com.kaycheung.order_service.util.ObjectMapperUtils;
 import com.kaycheung.order_service.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -45,12 +50,10 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PublicOrderService {
-
-    private static final Logger log = LoggerFactory.getLogger(PublicOrderService.class);
-
     private final OrderPersistenceService orderPersistenceService;
     private final InternalOrderService internalOrderService;
     private final OutboxEventService outboxEventService;
@@ -69,6 +72,7 @@ public class PublicOrderService {
 
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final ObjectMapperUtils objectMapperUtils;
 
 
     public PublicOrderResponseDTO getOrder(UUID orderId) {
@@ -177,6 +181,7 @@ public class PublicOrderService {
                     orderDto.totalAmount(),
                     orderDto.currency()
             );
+            //  get the existing payment - API call
             CreatePaymentResponse createPaymentResponse = paymentClient.createPayment(createPaymentRequest, userId);
 
             PublicOrderCreatePaymentResponseDTO paymentDto = new PublicOrderCreatePaymentResponseDTO(
@@ -195,7 +200,7 @@ public class PublicOrderService {
         ));
         List<UUID> productIds = quoteItemsByProductId.keySet().stream().toList();
 
-        //  get the list of product prices from product-service
+        //  get the list of product prices from product-service - API call
         ProductRequestDTO productRequest = new ProductRequestDTO(productIds);
         ProductResponseDTO productResponse = productClient.getProductsWithBasePrice(productRequest);
 
@@ -236,7 +241,7 @@ public class PublicOrderService {
             throw new QuoteConflictException("Quote total amount is inconsistent with line totals");
         }
 
-        //  check stock and create reservations in inventory-service
+        //  check stock and create reservations in inventory-service - API call
         List<InventoryRequestItemDTO> itemsToReserve = quoteItemsByProductId.values().stream().map(quoteItem -> new InventoryRequestItemDTO(quoteItem.getProductId(), quoteItem.getQuantity())).toList();
         InventoryRequestDTO inventoryRequest = new InventoryRequestDTO(request.quoteId(), itemsToReserve);
         InventoryResponseDTO inventoryResponse = inventoryClient.checkStockAndCreateReservations(inventoryRequest);
@@ -258,13 +263,17 @@ public class PublicOrderService {
             orderDto = orderMapper.toDto(existing, orderItems);
         } catch (Exception ex) {
             //  best-effort compensation
-            InventoryReleaseReservationRequestDTO releaseRequest = new InventoryReleaseReservationRequestDTO(request.quoteId());
-            inventoryClient.releaseReservationsForCompensation(releaseRequest);
+//            InventoryReleaseReservationRequestDTO releaseRequest = new InventoryReleaseReservationRequestDTO(request.quoteId());
+//            inventoryClient.releaseReservationsForCompensation(releaseRequest);
+            OrderCreationFailedPayload payloadObject = new OrderCreationFailedPayload(quote.getId());
+            String payload = objectMapperUtils.toJson(payloadObject);
+            String key = "order:quote:" + quote.getId() + "order_creation_failed";
+            outboxEventService.createOutboxEvent(OutboxEventType.ORDER_CREATION_FAILED, payload, key);
 
             throw new OrderPersistenceFailedException("Failed to create order. Please try again.");
         }
 
-        //  create payment
+        //  create payment - API call
         CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest(orderDto.orderId(), orderDto.totalAmount(), orderDto.currency());
         CreatePaymentResponse createPaymentResponse;
 
@@ -276,7 +285,6 @@ public class PublicOrderService {
             } catch (Exception ignored) {
                 //  best-effort
             }
-
             throw ex;
         }
 
@@ -311,7 +319,6 @@ public class PublicOrderService {
         //  for DTO
         order.setOrderStatus(OrderStatus.CANCELED);
 
-        //  TODO(v2) write event to outbox
         eventPublisher.publishEvent(new OrderCanceledEvent(order.getSourceQuoteId()));
 
         //  create ORDER_CANCELED outbox event
@@ -324,8 +331,7 @@ public class PublicOrderService {
         return orderMapper.toDto(order, orderItems);
     }
 
-    private String buildOutboxPayloadForCancelOrder(Order order)
-    {
+    private String buildOutboxPayloadForCancelOrder(Order order) {
         ObjectNode node = objectMapper.createObjectNode();
         node.put("orderId", order.getId().toString());
         node.put("quoteId", order.getSourceQuoteId().toString());

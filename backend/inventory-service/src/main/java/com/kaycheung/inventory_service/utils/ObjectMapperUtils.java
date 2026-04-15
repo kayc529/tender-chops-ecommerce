@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class ObjectMapperUtils {
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     public String toJson(Object object) {
         try {

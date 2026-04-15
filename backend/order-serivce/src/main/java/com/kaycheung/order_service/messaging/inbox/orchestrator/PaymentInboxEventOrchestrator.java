@@ -21,7 +21,7 @@ public class PaymentInboxEventOrchestrator {
     private final OrderPersistenceService orderPersistenceService;
 
     public void handlePaymentAttemptAuthorized(UUID inboxEventId, PaymentInboxEventHandler.PaymentEventPayload p) {
-        // 1) Re-check reservation validity (source of truth = inventory/reservation layer)
+        // Re-check reservation validity (source of truth = inventory/reservation layer)
         InventoryConfirmReservationResponse response;
         OrderSourceQuoteIdProjection orderQuoteId = orderPersistenceService.getOrderSourceQuoteId(p.orderId());
 

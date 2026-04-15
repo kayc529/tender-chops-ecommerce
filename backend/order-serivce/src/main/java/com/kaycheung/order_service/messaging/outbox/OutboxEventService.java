@@ -46,6 +46,7 @@ public class OutboxEventService {
 
         try {
             outboxEventRepository.save(outboxEvent);
+            log.info("OutboxEvent created: type={}, key={}", eventType, idempotencyKey);
         } catch (DataIntegrityViolationException ex) {
             // Duplicate delivery or duplicate handler run — safe to ignore.
             log.info("OutboxEvent already exists (idempotent): key={}, type={}", idempotencyKey, eventType);

@@ -11,11 +11,10 @@ import com.kaycheung.order_service.domain.PersistedQuoteAndQuoteItems;
 import com.kaycheung.order_service.dto.QuoteResponseDTO;
 import com.kaycheung.order_service.entity.Quote;
 import com.kaycheung.order_service.entity.QuoteItem;
-import com.kaycheung.order_service.exception.domain.quote.QuoteInvalidException;
 import com.kaycheung.order_service.exception.domain.quote.QuoteConflictException;
 import com.kaycheung.order_service.exception.domain.quote.QuoteExpiredException;
+import com.kaycheung.order_service.exception.domain.quote.QuoteInvalidException;
 import com.kaycheung.order_service.exception.domain.quote.QuoteNotFoundException;
-import com.kaycheung.order_service.mapper.QuoteItemMapper;
 import com.kaycheung.order_service.mapper.QuoteMapper;
 import com.kaycheung.order_service.repository.QuoteItemRepository;
 import com.kaycheung.order_service.repository.QuoteRepository;
@@ -40,7 +39,6 @@ public class CheckoutService {
     private final QuoteRepository quoteRepository;
     private final QuoteItemRepository quoteItemRepository;
     private final QuoteMapper quoteMapper;
-    private final QuoteItemMapper quoteItemMapper;
 
     private final CartClient cartClient;
     private final ProductClient productClient;

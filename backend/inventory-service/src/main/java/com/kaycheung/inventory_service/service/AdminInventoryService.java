@@ -1,29 +1,35 @@
 package com.kaycheung.inventory_service.service;
 
 import com.kaycheung.inventory_service.dto.InventoryAdminAvailabilityBatchRequestDTO;
-import com.kaycheung.inventory_service.dto.InventoryAdminCreateInventoryRequestDTO;
 import com.kaycheung.inventory_service.dto.InventoryAdminResponseDTO;
 import com.kaycheung.inventory_service.dto.InventoryAdminUpdateInventoryRequestDTO;
 import com.kaycheung.inventory_service.entity.Inventory;
+import com.kaycheung.inventory_service.entity.InventoryStockAvailabilityStatus;
 import com.kaycheung.inventory_service.exception.domain.InventoryNotFoundException;
-import com.kaycheung.inventory_service.exception.domain.InventoryTotalQuantityBelowReservedException;
 import com.kaycheung.inventory_service.mapper.AdminInventoryMapper;
+import com.kaycheung.inventory_service.messaging.outbox.OutboxEventService;
+import com.kaycheung.inventory_service.messaging.outbox.OutboxEventType;
+import com.kaycheung.inventory_service.messaging.outbox.payload.InventoryStockUpdatedPayload;
 import com.kaycheung.inventory_service.repo.InventoryRepository;
+import com.kaycheung.inventory_service.utils.ObjectMapperUtils;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminInventoryService {
-    private static final Logger log = LoggerFactory.getLogger(AdminInventoryService.class);
+
     private final InventoryRepository inventoryRepository;
     private final AdminInventoryMapper inventoryMapper;
+    private final InventoryPersistService inventoryPersistService;
+    private final OutboxEventService outboxEventService;
+    private final ObjectMapperUtils objectMapperUtils;
 
     public InventoryAdminResponseDTO getAvailability(UUID productId) {
         Inventory inventory = inventoryRepository.findByProductId(productId).orElseThrow(() -> new InventoryNotFoundException(productId));
@@ -35,43 +41,33 @@ public class AdminInventoryService {
         return inventoryMapper.toDtoList(inventories);
     }
 
-    public InventoryAdminResponseDTO createInventory(InventoryAdminCreateInventoryRequestDTO request) {
-        UUID productId = request.productId();
-        try {
-            Inventory newInventory = new Inventory();
-            newInventory.setProductId(productId);
-            // v1 default -> new products start with 0 stock and 0 reserved
-            newInventory.setTotalQuantity(0);
-            newInventory.setReservedQuantity(0);
-            Inventory saved = inventoryRepository.save(newInventory);
-            return inventoryMapper.toDto(saved);
-        } catch (DataIntegrityViolationException ex) {
-            //  Idempotent + race-safe -> if the UNIQUE(product_id) constraint caused this exception
-            //  if row with the same product id already exists (or was created concurrently), return it
-            Inventory existingInventory = inventoryRepository.findByProductId(productId).orElseThrow(() -> ex);
-            return inventoryMapper.toDto(existingInventory);
-        }
-    }
-
     //  admin cannot update reservedQuantity -> reservation's logic
+    @Transactional
     public InventoryAdminResponseDTO updateInventory(UUID productId, InventoryAdminUpdateInventoryRequestDTO request) {
-        Inventory inventory = inventoryRepository.findByProductId(productId).orElseThrow(() -> new InventoryNotFoundException(productId));
+        Inventory updateInventory = inventoryPersistService.updateInventoryTotalQuantity(productId, request.totalQuantityDelta());
 
-        int reservedQuantity = inventory.getReservedQuantity();
+        int availableStock = updateInventory.getTotalQuantity() - updateInventory.getReservedQuantity();
+        long stockVersion = updateInventory.getStockVersion();
+        String payload = getInventoryStockUpdatedPayloadString(productId, availableStock, stockVersion);
+        String key = getInventoryStockUpdatedIdempotencyKey(productId, stockVersion);
 
-        //  total quantity guardrail
-        if (request.totalQuantity() < reservedQuantity) {
-            throw new InventoryTotalQuantityBelowReservedException(request.totalQuantity(), reservedQuantity);
-        }
+        outboxEventService.createOutboxEvent(OutboxEventType.INVENTORY_STOCK_UPDATED, payload, key);
 
-        inventory.setTotalQuantity(request.totalQuantity());
-        //  make sure the timestamp updated
-        Inventory saved = inventoryRepository.save(inventory);
-        return inventoryMapper.toDto(saved);
+        return inventoryMapper.toDto(updateInventory);
     }
 
     public void deleteInventory(UUID productId) {
         Inventory inventory = inventoryRepository.findByProductId(productId).orElseThrow(() -> new InventoryNotFoundException(productId));
         inventoryRepository.delete(inventory);
+    }
+
+    private String getInventoryStockUpdatedPayloadString(UUID productId, int availableStock, long stockVersion) {
+        String stockStatus = InventoryStockAvailabilityStatus.getAvailabilityStatusWithAvailableStock(availableStock);
+        InventoryStockUpdatedPayload payloadObject = new InventoryStockUpdatedPayload(productId, availableStock, stockStatus, stockVersion);
+        return objectMapperUtils.toJson(payloadObject);
+    }
+
+    private String getInventoryStockUpdatedIdempotencyKey(UUID productId, long stockVersion) {
+        return "inventory-stock-updated:product:" + productId + ":v:" + stockVersion;
     }
 }

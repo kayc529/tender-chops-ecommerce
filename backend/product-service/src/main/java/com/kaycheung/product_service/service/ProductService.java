@@ -84,6 +84,8 @@ public class ProductService {
             return cachedProduct.get();
         }
 
+        log.info("Cache miss for product {}", productId);
+
         Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
         ProductResponseDTO responseDTO = productMapper.toDetailDto(product);
 

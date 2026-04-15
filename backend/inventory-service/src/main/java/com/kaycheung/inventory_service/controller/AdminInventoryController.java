@@ -1,7 +1,6 @@
 package com.kaycheung.inventory_service.controller;
 
 import com.kaycheung.inventory_service.dto.InventoryAdminAvailabilityBatchRequestDTO;
-import com.kaycheung.inventory_service.dto.InventoryAdminCreateInventoryRequestDTO;
 import com.kaycheung.inventory_service.dto.InventoryAdminResponseDTO;
 import com.kaycheung.inventory_service.dto.InventoryAdminUpdateInventoryRequestDTO;
 import com.kaycheung.inventory_service.service.AdminInventoryService;
