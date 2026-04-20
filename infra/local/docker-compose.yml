@@ -1,4 +1,4 @@
-name: keycloak
+name: ${PROJECT_NAME}
 
 services:
   keycloak:

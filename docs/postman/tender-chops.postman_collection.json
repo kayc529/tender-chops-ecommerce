@@ -1,0 +1,1333 @@
+{
+  "info": {
+    "_postman_id": "1f7a3687-cfd9-41c1-a7f4-baf96cebe938",
+    "name": "Tender Chops",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "16211410"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "(User) Get Access Token via Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "pm.environment.set(\"ACCESS_TOKEN\", json.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text",
+                  "uuid": "ab82fcad-8f20-4561-b671-838d304b17bd"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{FRONTEND_CLIENT_ID}}",
+                  "type": "text",
+                  "uuid": "b93702ca-2811-4ed5-b4fc-7be396c5a923"
+                },
+                {
+                  "key": "username",
+                  "value": "{{TEST_USER_USERNAME}}",
+                  "type": "text",
+                  "uuid": "335ebcc9-1d5c-4743-bea1-977ae9340360"
+                },
+                {
+                  "key": "password",
+                  "value": "{{TEST_USER_PASSWORD}}",
+                  "type": "text",
+                  "uuid": "abe62dde-6f34-483c-886d-afd8a17a69f2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{KEYCLOAK_BASE_URL}}/realms/tender-chops-test/protocol/openid-connect/token",
+              "host": ["{{KEYCLOAK_BASE_URL}}"],
+              "path": [
+                "realms",
+                "tender-chops-test",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Get Access Token via Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "pm.environment.set(\"ACCESS_TOKEN\", json.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text",
+                  "uuid": "ab82fcad-8f20-4561-b671-838d304b17bd"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{FRONTEND_CLIENT_ID}}",
+                  "type": "text",
+                  "uuid": "b93702ca-2811-4ed5-b4fc-7be396c5a923"
+                },
+                {
+                  "key": "username",
+                  "value": "{{ADMIN_USER_USERNAME}}",
+                  "type": "text",
+                  "uuid": "335ebcc9-1d5c-4743-bea1-977ae9340360"
+                },
+                {
+                  "key": "password",
+                  "value": "{{ADMIN_USER_PASSWORD}}",
+                  "type": "text",
+                  "uuid": "abe62dde-6f34-483c-886d-afd8a17a69f2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{KEYCLOAK_BASE_URL}}/realms/tender-chops-test/protocol/openid-connect/token",
+              "host": ["{{KEYCLOAK_BASE_URL}}"],
+              "path": [
+                "realms",
+                "tender-chops-test",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Product) Get Access Token via Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "pm.environment.set(\"ACCESS_TOKEN\", json.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text",
+                  "uuid": "a34aa204-2caf-42cd-be78-5584125211cd"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{PRODUCT_SERVICE_CLIENT_ID}}",
+                  "type": "text",
+                  "uuid": "72fadb92-db2e-4b48-923b-3468c98ae0b7"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{PRODUCT_SERVICE_CLIENT_SECRET}}",
+                  "type": "text",
+                  "uuid": "b0a8e178-98f6-4125-9895-a76e44168cd5"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{KEYCLOAK_BASE_URL}}/realms/tender-chops-test/protocol/openid-connect/token",
+              "host": ["{{KEYCLOAK_BASE_URL}}"],
+              "path": [
+                "realms",
+                "tender-chops-test",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Cart) Get Access Token via Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "pm.environment.set(\"ACCESS_TOKEN\", json.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text",
+                  "uuid": "a34aa204-2caf-42cd-be78-5584125211cd"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{CART_SERVICE_CLIENT_ID}}",
+                  "type": "text",
+                  "uuid": "72fadb92-db2e-4b48-923b-3468c98ae0b7"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{CART_SERVICE_CLIENT_SECRET}}",
+                  "type": "text",
+                  "uuid": "b0a8e178-98f6-4125-9895-a76e44168cd5"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{KEYCLOAK_BASE_URL}}/realms/tender-chops-test/protocol/openid-connect/token",
+              "host": ["{{KEYCLOAK_BASE_URL}}"],
+              "path": [
+                "realms",
+                "tender-chops-test",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Order) Get Access Token via Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "pm.environment.set(\"ACCESS_TOKEN\", json.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text",
+                  "uuid": "a34aa204-2caf-42cd-be78-5584125211cd"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{ORDER_SERVICE_CLIENT_ID}}",
+                  "type": "text",
+                  "uuid": "72fadb92-db2e-4b48-923b-3468c98ae0b7"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{ORDER_SERVICE_CLIENT_SECRET}}",
+                  "type": "text",
+                  "uuid": "b0a8e178-98f6-4125-9895-a76e44168cd5"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{KEYCLOAK_BASE_URL}}/realms/tender-chops-test/protocol/openid-connect/token",
+              "host": ["{{KEYCLOAK_BASE_URL}}"],
+              "path": [
+                "realms",
+                "tender-chops-test",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "",
+                  "type": "file",
+                  "uuid": "ff2860b8-a821-45a9-9ef4-8248ad7d4cdd",
+                  "value": null
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{CART_SERVICE_BASE_URL}}/cart",
+              "host": ["{{CART_SERVICE_BASE_URL}}"],
+              "path": ["cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Merge Guest Cart",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"cartItems\":[\n        {\n            \"productId\": \"ea277e8f-b752-4b90-8ec0-e635ed77204d\",\n            \"quantity\": 1\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CART_SERVICE_BASE_URL}}/cart",
+              "host": ["{{CART_SERVICE_BASE_URL}}"],
+              "path": ["cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Cart Item to Cart",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productId\":\"ff81bcbe-60fd-48a8-9112-1a3416e1200d\",\n    \"quantity\":1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CART_SERVICE_BASE_URL}}/cart/items",
+              "host": ["{{CART_SERVICE_BASE_URL}}"],
+              "path": ["cart", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\":3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CART_SERVICE_BASE_URL}}/cart/items/b297f1c7-f9c4-4451-b7f5-bbb5a949b4ec",
+              "host": ["{{CART_SERVICE_BASE_URL}}"],
+              "path": ["cart", "items", "b297f1c7-f9c4-4451-b7f5-bbb5a949b4ec"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Cart Item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\":1\n}"
+            },
+            "url": {
+              "raw": "{{CART_SERVICE_BASE_URL}}/cart/items/b297f1c7-f9c4-4451-b7f5-bbb5a949b4ec",
+              "host": ["{{CART_SERVICE_BASE_URL}}"],
+              "path": ["cart", "items", "b297f1c7-f9c4-4451-b7f5-bbb5a949b4ec"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Internal) Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "afd5c54d-0b97-41da-b2be-2703eb62dbe9",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{CART_SERVICE_BASE_URL}}/internal/cart",
+              "host": ["{{CART_SERVICE_BASE_URL}}"],
+              "path": ["internal", "cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Internal) Empty Cart",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "afd5c54d-0b97-41da-b2be-2703eb62dbe9",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{CART_SERVICE_BASE_URL}}/internal/cart/clear",
+              "host": ["{{CART_SERVICE_BASE_URL}}"],
+              "path": ["internal", "cart", "clear"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Product",
+      "item": [
+        {
+          "name": "(Public) Get Products",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{PRODUCT_SERVICE_BASE_URL}}/products",
+              "host": ["{{PRODUCT_SERVICE_BASE_URL}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "BEEF",
+                  "disabled": true
+                },
+                {
+                  "key": "title",
+                  "value": "ri",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Public) Get Product",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{PRODUCT_SERVICE_BASE_URL}}/products/{{product_id}}",
+              "host": ["{{PRODUCT_SERVICE_BASE_URL}}"],
+              "path": ["products", "{{product_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "pm.environment.set(\"product_id\", json.id)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": " {\n    \"title\": \"Chicken Drumsticks\",\n    \"description\": \"Juicy chicken drumsticks with skin on for extra flavor.\",\n    \"portionDescription\": \"600g pack\",\n    \"price\": 6.20,\n    \"productCategory\": \"CHICKEN\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{PRODUCT_SERVICE_BASE_URL}}/admin/products",
+              "host": ["{{PRODUCT_SERVICE_BASE_URL}}"],
+              "path": ["admin", "products"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Delete Product",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{PRODUCT_SERVICE_BASE_URL}}/admin/products/{{product_id}}",
+              "host": ["{{PRODUCT_SERVICE_BASE_URL}}"],
+              "path": ["admin", "products", "{{product_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Create Image Upload URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "",
+                  "pm.test(\"Response has uploadUrl\", () => {",
+                  "  pm.expect(res).to.have.property(\"uploadUrl\");",
+                  "  pm.expect(res.quoteId).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test(\"Response has expectedContentType\", () => {",
+                  "  pm.expect(res).to.have.property(\"expectedContentType\");",
+                  "  pm.expect(res.quoteId).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.environment.set(\"product_image_presigned_url\", res.uploadUrl);",
+                  "pm.environment.set(\"expected_content_type\", res.expectedContentType);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"contentType\":\"image/png\",\n    \"originalFilename\":\"salmon-fillet.png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{PRODUCT_SERVICE_BASE_URL}}/admin/products/{{product_id}}/image-upload-url",
+              "host": ["{{PRODUCT_SERVICE_BASE_URL}}"],
+              "path": [
+                "admin",
+                "products",
+                "{{product_id}}",
+                "image-upload-url"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Presigned) Upload Image to S3",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": "/Users/kaycheung/Desktop/salmon-fillet.png"
+              }
+            },
+            "url": {
+              "raw": "{{product_image_presigned_url}}",
+              "host": ["{{product_image_presigned_url}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Get Inventory By ProductId",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productId\":\"f20415ad-421b-4594-a182-0984a25737ca\"\n}"
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/inventory/{{product_id}}",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": ["inventory", "{{product_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Batch Get Inventory By ProductId",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productIds\":[\"36b2666f-5d1d-45b8-bf04-c0745540b9b7\",\"677648a7-0177-4976-ad87-4ee44b932b97\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/inventory/batch",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": ["inventory", "batch"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Get Inventory By ProductId",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productId\":\"f20415ad-421b-4594-a182-0984a25737ca\"\n}"
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/admin/inventory/{{product_id}}",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": ["admin", "inventory", "{{product_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Batch Get Inventory by ProductId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productIds\":[\"118fb3d5-df15-4900-931a-1357c69ef1c3\",\"4a28f4c4-6335-4213-842d-df9f87247f87\",\"ed9ff65b-7eef-4651-bcc5-c118dd82f47a\",\"9808cd21-7924-4c21-ad64-924249c5299c\",\"b3464b03-192f-447a-b9e1-d5e73b1d91d6\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/admin/inventory/batch",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": ["admin", "inventory", "batch"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Update inventory by ProductId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"totalQuantityDelta\":-99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/admin/inventory/{{product_id}}",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": ["admin", "inventory", "{{product_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Admin) Delete inventory by ProductId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productId\":\"f20415ad-421b-4594-a182-0984a25737ca\"\n}"
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/admin/inventory/{{product_id}}",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": ["admin", "inventory", "{{product_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Internal) Release for compensation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quoteId\":\"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/internal/inventory/reservations/release-for-compensation",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": [
+                "internal",
+                "inventory",
+                "reservations",
+                "release-for-compensation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Internal) Release for cancellation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quoteId\":\"f556a4ec-65de-4528-9c1e-c2bb08dd9cad\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE_BASE_URL}}/internal/inventory/reservations/release-for-cancellation",
+              "host": ["{{INVENTORY_SERVICE_BASE_URL}}"],
+              "path": [
+                "internal",
+                "inventory",
+                "reservations",
+                "release-for-cancellation"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Order",
+      "item": [
+        {
+          "name": "(Public) Get Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ORDER_SERVICE_BASE_URL}}/orders/{{order_id}}",
+              "host": ["{{ORDER_SERVICE_BASE_URL}}"],
+              "path": ["orders", "{{order_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Public) Get Orders",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_SERVICE_BASE_URL}}/orders",
+              "host": ["{{ORDER_SERVICE_BASE_URL}}"],
+              "path": ["orders"],
+              "query": [
+                {
+                  "key": "timeFilter",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "start",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "end",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "3",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Public) Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "",
+                  "pm.test(\"Response has quoteId\", () => {",
+                  "  pm.expect(res).to.have.property(\"orderId\");",
+                  "  pm.expect(res.quoteId).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.environment.set(\"order_id\", res.order.orderId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quoteId\":\"{{quote_id}}\",\n    \"address\":{\n        \"receiver\": \"John Doe\",\n        \"phone\": \"+1-234-567-8900\",\n        \"addressLine1\": \"123 Main Street\",\n        \"addressLine2\": \"Apt 4B\",\n        \"city\": \"New York\",\n        \"stateOrProvince\": \"NY\",\n        \"postalCode\": \"10001\",\n        \"country\": \"US\"\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_SERVICE_BASE_URL}}/orders",
+              "host": ["{{ORDER_SERVICE_BASE_URL}}"],
+              "path": ["orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Public) Cancel Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{ORDER_SERVICE_BASE_URL}}/orders/{{order_id}}/cancel",
+              "host": ["{{ORDER_SERVICE_BASE_URL}}"],
+              "path": ["orders", "{{order_id}}", "cancel"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Public) Get Quote",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ORDER_SERVICE_BASE_URL}}/checkout/1b9134b5-ac2d-4059-9391-226b815b1e06",
+              "host": ["{{ORDER_SERVICE_BASE_URL}}"],
+              "path": ["checkout", "1b9134b5-ac2d-4059-9391-226b815b1e06"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Public) Create Quote",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "",
+                  "pm.test(\"Response has quoteId\", () => {",
+                  "  pm.expect(res).to.have.property(\"quoteId\");",
+                  "  pm.expect(res.quoteId).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "",
+                  "pm.environment.set(\"quote_id\", res.quoteId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{ORDER_SERVICE_BASE_URL}}/checkout",
+              "host": ["{{ORDER_SERVICE_BASE_URL}}"],
+              "path": ["checkout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "(Internal) Update Order Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"newOrderStatus\":\"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_SERVICE_BASE_URL}}/internal/orders/{{order_id}}/update-status",
+              "host": ["{{ORDER_SERVICE_BASE_URL}}"],
+              "path": ["internal", "orders", "{{order_id}}", "update-status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Actuator",
+      "item": [
+        {
+          "name": "Product Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["actuator", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cart Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["actuator", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Inventory Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8083/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8083",
+              "path": ["actuator", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Order Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["actuator", "health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

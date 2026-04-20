@@ -1,0 +1,96 @@
+-- ---------------------------------------------------------
+-- INVENTORY
+-- Separate DB from product, so no FK assumed here
+-- One OUT_OF_STOCK, two LOW_IN_STOCK, rest IN_STOCK
+-- ---------------------------------------------------------
+INSERT INTO inventory (
+    id,
+    product_id,
+    total_quantity,
+    reserved_quantity,
+    created_at,
+    updated_at,
+    stock_version
+)
+VALUES
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2001',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1001',
+    18,
+    0,
+    NOW(),
+    NOW(),
+    4
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2002',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1002',
+    27,
+    0,
+    NOW(),
+    NOW(),
+    7
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2003',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1003',
+    6,
+    0,
+    NOW(),
+    NOW(),
+    2
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2004',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1004',
+    14,
+    0,
+    NOW(),
+    NOW(),
+    9
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2005',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1005',
+    0,
+    0,
+    NOW(),
+    NOW(),
+    5
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2006',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1006',
+    33,
+    0,
+    NOW(),
+    NOW(),
+    1
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2007',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1007',
+    8,
+    0,
+    NOW(),
+    NOW(),
+    6
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2008',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1008',
+    21,
+    0,
+    NOW(),
+    NOW(),
+    3
+),
+(
+    '7b9d1c20-9a11-4c55-8f21-2b6d7e5a2009',
+    '3f4e2a10-6f2b-4c58-9d3c-1a8b7e4f1009',
+    12,
+    0,
+    NOW(),
+    NOW(),
+    10
+);
